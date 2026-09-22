@@ -1,37 +1,207 @@
 # VoiceDesk
 
-VoiceDesk is a real-time, low-latency voice agent for e-commerce customer
-support, built on [Pipecat](https://github.com/pipecat-ai/pipecat), the
-open-source Python framework for voice and multimodal conversational
-agents. A caller connects over WebRTC from a browser, speaks naturally, and
-receives a spoken, grounded answer drawn from the same customer support
-knowledge base a text chatbot would use. Every stage of the pipeline,
-speech-to-text, retrieval, the language model, and text-to-speech, is
-swappable, which keeps the whole stack on free and open-source components
-during development while leaving a clear upgrade path to paid services
-later without rewriting the agent.
+**A real-time, low-latency AI voice agent for e-commerce customer support.**
 
-## Pipeline
+Built on [Pipecat](https://github.com/pipecat-ai/pipecat), the open-source
+Python framework for voice and multimodal conversational agents, VoiceDesk
+demonstrates a production-grade architecture for AI-driven voice support:
+provider failover, retrieval-grounded responses, explicit conversation-state
+management, observability, and security, all assembled from free and
+open-source components with a clear upgrade path to paid services.
 
+---
+
+## Overview
+
+VoiceDesk is a streaming voice pipeline that lets a caller speak naturally
+to an AI support agent from a web browser and receive a spoken, grounded
+answer in return. Rather than a request-response chatbot bolted onto a
+text-to-speech engine, it is built as a continuous, low-latency pipeline:
+audio flows in over WebRTC, is transcribed as the caller speaks, is answered
+by a language model grounded in a real customer support knowledge base, and
+the answer is streamed back as speech, with the caller free to interrupt at
+any point, the same way a real support line behaves.
+
+The project is deliberately built for reliability under real-world
+constraints. Every provider in the pipeline, speech recognition, the
+language model, and speech synthesis, has a fallback path that keeps the
+call running when a provider is unavailable, rate limited, or misconfigured,
+without the caller noticing an interruption.
+
+## Objectives
+
+- Deliver a voice support experience indistinguishable in responsiveness
+  from a well-run human support line: natural turn-taking, mid-sentence
+  interruption, and a spoken response grounded in real support content.
+- Keep the entire stack runnable on free and open-source components during
+  development, while keeping every provider swappable for a paid upgrade
+  later without rewriting the agent.
+- Treat provider failure as an expected condition, not an edge case: every
+  external dependency, speech recognition, language model, and text
+  synthesis, has a tested fallback, and the call continues transparently
+  when the primary provider fails.
+- Model the support conversation explicitly, greeting, intent capture,
+  grounded resolution, clarification, and escalation, rather than leaving
+  conversational structure implicit in a single long prompt.
+- Build in observability and security from the start: per-turn latency
+  tracing, structured session logging, authenticated connections, and rate
+  limiting are part of the architecture, not an afterthought.
+
+## What We Build
+
+- **A streaming voice pipeline** (`bot.py`, `src/voicedesk_voice/`) that
+  chains speech-to-text, retrieval, a language model, and text-to-speech
+  into a single low-latency, interruptible conversation, orchestrated by
+  Pipecat.
+- **A dual-provider failover layer** for both speech recognition (Groq
+  Whisper, with a local faster-whisper fallback) and the language model
+  (Groq, with a Gemini fallback), each backed by a Redis-tracked request
+  budget and automatic recovery.
+- **A retrieval-grounded knowledge base** (PostgreSQL with pgvector) built
+  from a real customer support dataset, queried on every turn so the
+  agent's answers are drawn from actual support content rather than
+  invented.
+- **An explicit conversation flow** (Pipecat Flows) covering greeting and
+  identity capture, intent capture, grounded resolution, a bounded
+  clarification loop, escalation to a human agent, and closing.
+- **A browser client** (`client/`), a Pipecat JavaScript SDK application
+  with call controls, a live transcript, a speaking indicator, and
+  automatic reconnect handling.
+- **Observability and security infrastructure**: OpenTelemetry tracing to
+  Jaeger, a live pipeline debugger (Whisker), JWT-authenticated connections,
+  per-IP rate limiting, call duration and idle-silence limits, and opt-in
+  transcript storage.
+- **A test suite, a production Dockerfile, and a CI workflow**, so the
+  provider router, the retrieval module, and the conversation flow are all
+  independently verifiable, and the project is deployable as a container
+  with tests enforced on every pull request.
+
+## How It Helps
+
+- **For callers**, the experience matches a competent human support line:
+  natural speech, the ability to interrupt, and answers grounded in real
+  support content rather than a generic model response.
+- **For the business**, phone support is normally the most expensive
+  support channel to staff; this architecture handles routine questions
+  automatically and escalates only what genuinely needs a person, with a
+  structured summary already prepared for the human agent.
+- **For reliability**, no single provider outage or rate limit takes the
+  agent down: speech recognition and the language model both fail over
+  automatically, and the call continues without the caller noticing.
+- **For operators**, per-turn tracing and structured session logging mean
+  slow stages and failure patterns are visible and diagnosable, and voice
+  performance can be reported alongside a text support channel in the same
+  analytics dashboard.
+- **For engineering**, every component is swappable and independently
+  testable, so moving from free-tier providers to paid ones, or extending
+  the conversation flow, does not require rearchitecting the agent.
+
+## Architecture
+
+The pipeline runs as one Python process per active call. A caller's audio
+enters over WebRTC, moves through speech recognition, retrieval-grounded
+language model reasoning, and speech synthesis, and returns as spoken audio,
+with every provider stage backed by a fallback and every turn logged for
+observability.
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Segoe UI, Helvetica, Arial, sans-serif", "primaryTextColor": "#1f2937", "lineColor": "#64748b", "edgeLabelBackground": "#f8fafc"}}}%%
+flowchart TD
+    classDef caller fill:#0ea5e9,stroke:#0369a1,stroke-width:2px,color:#ffffff
+    classDef transport fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#ffffff
+    classDef stt fill:#10b981,stroke:#047857,stroke-width:2px,color:#ffffff
+    classDef flow fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:#1f2937
+    classDef llm fill:#ef4444,stroke:#b91c1c,stroke-width:2px,color:#ffffff
+    classDef tts fill:#14b8a6,stroke:#0f766e,stroke-width:2px,color:#ffffff
+    classDef data fill:#1f2937,stroke:#4b5563,stroke-width:2px,color:#f9fafb
+    classDef obs fill:#ec4899,stroke:#be185d,stroke-width:2px,color:#ffffff
+
+    Caller(["`**Caller**
+    Speaks over microphone`"]):::caller
+    Browser["`**Browser Client**
+    Pipecat JS SDK`"]:::caller
+    WebRTC{{"`**SmallWebRTCTransport**
+    primary, low-latency`"}}:::transport
+
+    subgraph PipelineLayer["🎙️ Voice Pipeline &nbsp; (one session per call)"]
+        direction TB
+
+        Idle["`**Idle Monitor**
+        ends call on silence`"]:::flow
+
+        subgraph STTLayer["Speech-to-Text"]
+            direction LR
+            GroqSTT["`**Groq Whisper**
+            _primary_`"]:::stt
+            LocalSTT["`**faster-whisper**
+            _local fallback_`"]:::stt
+        end
+
+        Turn["`**Turn Aggregator**
+        VAD-driven turn detection`"]:::flow
+        Retrieval["`**Retrieval Grounding**
+        pgvector similarity search`"]:::flow
+        FlowMgr["`**Conversation Flow**
+        greeting → intent → resolution → escalation → closing`"]:::flow
+
+        subgraph LLMLayer["Language Model"]
+            direction LR
+            GroqLLM["`**Groq gpt-oss-20b**
+            _primary_`"]:::llm
+            GeminiLLM["`**Gemini 2.5 Flash**
+            _fallback_`"]:::llm
+        end
+
+        Logger["`**Turn Logger**
+        provider · tokens · retrieval hits`"]:::flow
+        TTS["`**Kokoro TTS**
+        local synthesis`"]:::tts
+    end
+
+    subgraph DataLayer["🗄️ Data &amp; Caching"]
+        direction LR
+        Postgres[("`**PostgreSQL + pgvector**
+        knowledge base · call logs`")]:::data
+        Redis[("`**Redis**
+        quota &amp; rate limits`")]:::data
+    end
+
+    subgraph ObsLayer["📊 Observability"]
+        direction LR
+        Jaeger["`**Jaeger**
+        OpenTelemetry traces`"]:::obs
+        Whisker["`**Whisker**
+        live pipeline debugger`"]:::obs
+    end
+
+    Caller -->|microphone audio| Browser
+    Browser -->|WebRTC audio| WebRTC
+    WebRTC --> Idle --> GroqSTT
+    GroqSTT -. on failure .-> LocalSTT
+    GroqSTT --> Turn
+    LocalSTT --> Turn
+    Turn --> Retrieval
+    Retrieval <-. similarity search .-> Postgres
+    Retrieval --> FlowMgr --> GroqLLM
+    GroqLLM -. on failure .-> GeminiLLM
+    GroqLLM --> Logger
+    GeminiLLM --> Logger
+    Logger -. writes turn .-> Postgres
+    Logger --> TTS --> WebRTC
+    WebRTC -->|spoken audio| Browser --> Caller
+
+    GroqSTT -. quota check .-> Redis
+    GroqLLM -. quota check .-> Redis
+    PipelineLayer -. spans .-> Jaeger
+    PipelineLayer -. frame events .-> Whisker
 ```
-Browser client (Pipecat JS client SDK, SmallWebRTCTransport)
-        |
-        v  WebRTC (primary) or WebSocket (scripted testing only)
-Pipecat pipeline (one Python process per call)
-  1. Transport input
-  2. Idle-silence monitor (ends the call after prolonged caller silence)
-  3. STT: Groq Whisper (primary) -> local faster-whisper (fallback)
-  4. User context aggregator (VAD-driven turn detection)
-  5. Retrieval grounding (pgvector similarity search against support_kb)
-  6. LLM: Groq gpt-oss-20b (primary) -> Gemini 2.5 Flash (fallback)
-  7. Per-turn logging (provider, tokens, retrieval hits -> call_turns)
-  8. TTS: Kokoro (local)
-  9. Transport output
-        |
-        v
-PostgreSQL + pgvector (support_kb, call_turns, call_sessions, escalations)
-Redis (per-provider request quota, call-start rate limiting)
-```
+
+**Legend.** Blue marks the caller and client, purple the transport layer,
+green the speech-to-text stage, amber the conversation-flow and grounding
+stages, red the language model stage, teal text-to-speech, dark gray the
+persistent data stores, and pink the observability tooling. Solid arrows
+trace the primary path audio and data take through a turn; dashed arrows
+mark fallback routing, quota checks, and asynchronous writes.
 
 Conversation structure, greeting and identity capture, intent capture,
 knowledge-base-grounded resolution, a bounded clarification loop, escalation,
@@ -47,10 +217,10 @@ the resolution and clarification nodes.
 - A Groq API key and a Gemini API key (both free tier). Neither is strictly
   required to run the pipeline, since local fallbacks exist for speech
   recognition and text-to-speech, but at least one working LLM key is
-  required for the agent to actually respond (see "LLM provider keys and
-  fallback" below).
+  required for the agent to actually respond (see "LLM Provider Keys and
+  Fallback" below).
 
-## Local setup
+## Local Setup
 
 Clone the repository, then from its root:
 
@@ -78,7 +248,7 @@ with:
 cat db/schema.sql | docker exec -i pipecat-voicedesk-postgres psql -U voicedesk -d voicedesk
 ```
 
-## Knowledge base ingestion
+## Knowledge Base Ingestion
 
 The agent grounds its answers in the Bitext customer support dataset (see
 "Licensing" below). Download, clean, and load it, then generate embeddings:
@@ -93,7 +263,7 @@ pairs) and the embedding model (`BAAI/bge-small-en-v1.5`, run locally, no
 API key). Re-running `load_support_kb.py` reuses the already-downloaded CSV
 in `data/raw/`; delete it to force a fresh download.
 
-## Running a local call
+## Running a Local Call
 
 Start the bot:
 
@@ -131,7 +301,7 @@ transcript events do show it, but the raw WebSocket protocol does not);
 correctness of a specific transcript is easiest to confirm against the
 bot's own log (`grep "Transcription:"`).
 
-## LLM provider keys and fallback
+## LLM Provider Keys and Fallback
 
 Set `GROQ_API_KEY` and `GEMINI_API_KEY` in `.env` to enable the two LLM
 providers. Groq is checked first for every turn; a real API error (invalid
@@ -153,7 +323,7 @@ To confirm it manually against the real APIs, temporarily set an invalid
 `GROQ_API_KEY` (or exhaust `GROQ_LLM_RPM_LIMIT`) and watch the bot's log for
 `LLM failover: now using GeminiLLMServiceWithQuota`.
 
-## Conversation state and escalation
+## Conversation State and Escalation
 
 The call is modeled as an explicit flow (`src/voicedesk_voice/call_flow.py`):
 greeting and identity capture, intent capture, knowledge-base-grounded
@@ -163,7 +333,7 @@ its attempt limit escalates automatically. Escalation writes a structured
 summary, caller name, intent, reason, and attempt count, to the
 `escalations` table; it does not store a raw transcript dump.
 
-## Observability and debugging
+## Observability and Debugging
 
 Per-turn OpenTelemetry traces, broken down into child spans for STT,
 retrieval, and LLM calls, export to Jaeger. View them at
@@ -181,7 +351,7 @@ providers used, escalation outcome) is written to `call_sessions` for every
 call, so voice agent performance can be reported alongside a text chat
 product's in the same analytics dashboard.
 
-## Known latency characteristics
+## Known Latency Characteristics
 
 Measured in this development environment (CPU only, no GPU) with the local
 fallback services active, since no cloud API keys were configured while
@@ -201,7 +371,7 @@ primary path specifically because they are faster than the local fallbacks.
 Verify current figures in your own environment and with your own provider
 accounts; rate limits and latency on free tiers change over time.
 
-## Security and reliability
+## Security and Reliability
 
 - The client connection can require a signed JWT (`REQUIRE_AUTH=true`,
   `JWT_SECRET` set). In the full platform this token comes from the existing
