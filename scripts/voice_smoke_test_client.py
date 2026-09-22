@@ -164,7 +164,7 @@ async def run_round_trip_test(ws) -> None:
     print(f"      saved response audio to {out_path}")
     print(
         "      NOTE: confirm the transcript itself against the bot's server log "
-        "(grep for 'Transcription:') — it never crosses back over the transport."
+        "(grep for 'Transcription:'); it never crosses back over the transport."
     )
 
 
@@ -231,7 +231,7 @@ async def run_interruption_test(ws) -> None:
     )
     print(
         "      NOTE: confirm the interrupting transcript against the bot's "
-        "server log (grep for 'Transcription:') — it never crosses back over "
+        "server log (grep for 'Transcription:'); it never crosses back over "
         "the transport."
     )
 

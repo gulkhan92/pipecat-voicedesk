@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>VoiceDesk Support</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="header-title">VoiceDesk Support</h1>
+      <span id="status-badge" class="status-badge status-idle">Not connected</span>
+    </header>
+
+    <main class="main">
+      <section class="call-panel">
+        <div id="speaking-indicator" class="speaking-indicator">
+          <span id="speaking-dot" class="speaking-dot"></span>
+          <span id="speaking-label" class="speaking-label">Not connected</span>
+        </div>
+
+        <div class="call-controls">
+          <button id="call-btn" class="call-btn call-btn-start">Start call</button>
+        </div>
+
+        <div id="reconnect-banner" class="reconnect-banner" hidden>
+          <span>Connection lost.</span>
+          <button id="reconnect-btn" class="reconnect-btn">Reconnect</button>
+        </div>
+
+        <div id="error-banner" class="error-banner" hidden></div>
+      </section>
+
+      <section class="panel transcript-panel">
+        <h2 class="panel-title">Transcript</h2>
+        <div id="transcript-log" class="panel-content">
+          <div class="placeholder">Start a call to talk with the support agent.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

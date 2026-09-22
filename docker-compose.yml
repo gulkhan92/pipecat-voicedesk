@@ -18,5 +18,29 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: pipecat-voicedesk-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Phase 7: local OpenTelemetry trace backend. Jaeger accepts OTLP/gRPC
+  # directly (no separate collector needed) and serves its own web UI.
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: pipecat-voicedesk-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686" # trace viewer UI
+      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317" # OTLP/gRPC ingest
+
 volumes:
   pipecat_voicedesk_pgdata:

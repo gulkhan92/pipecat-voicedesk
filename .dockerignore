@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.pytest_cache/
+.ruff_cache/
+client/node_modules/
+client/dist/
+data/raw/
+data/processed/
+data/embeddings/
+data/test_audio/
+.env
+git_verification.md
+git_verify.md

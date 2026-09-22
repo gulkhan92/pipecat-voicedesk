@@ -1,0 +1,246 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --border: #262a33;
+  --text: #e8eaed;
+  --text-dim: #9aa0ac;
+  --accent: #4f8cff;
+  --good: #3ddc84;
+  --bad: #ff5c5c;
+  --warn: #ffb020;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.status-badge {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.status-badge.status-connecting {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.status-badge.status-connected {
+  color: var(--good);
+  border-color: var(--good);
+}
+
+.status-badge.status-error {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.call-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.speaking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.speaking-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  opacity: 0.5;
+}
+
+.speaking-dot-listening {
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.speaking-dot-user {
+  background: var(--accent);
+  opacity: 1;
+  box-shadow: 0 0 0 6px rgba(79, 140, 255, 0.2);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.speaking-dot-bot {
+  background: var(--good);
+  opacity: 1;
+  box-shadow: 0 0 0 6px rgba(61, 220, 132, 0.2);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+}
+
+.speaking-label {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.call-controls {
+  display: flex;
+  justify-content: center;
+}
+
+.call-btn {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 32px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.call-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.call-btn-start {
+  background: var(--good);
+  color: #062b17;
+}
+
+.call-btn-end {
+  background: var(--bad);
+  color: #2b0606;
+}
+
+.reconnect-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 176, 32, 0.12);
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.reconnect-btn {
+  background: var(--warn);
+  color: #2b1c00;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.error-banner {
+  background: rgba(255, 92, 92, 0.12);
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  width: 100%;
+  text-align: center;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.panel-title {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.panel-content {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.placeholder {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.transcript-entry {
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 85%;
+}
+
+.transcript-entry .role {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.transcript-entry.user {
+  align-self: flex-end;
+  background: rgba(79, 140, 255, 0.15);
+}
+
+.transcript-entry.bot {
+  align-self: flex-start;
+  background: rgba(61, 220, 132, 0.12);
+}
