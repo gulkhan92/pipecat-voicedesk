@@ -1,0 +1,27 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local-only pre-flight checklist, never committed
+git_verification.md
+git_verify.md
+
+# Environment configuration
+.env
+
+# Generated data artifacts
+data/raw/
+data/processed/
+data/embeddings/
+data/test_audio/
+
+# Local model caches used by local STT/TTS/VAD services
+.cache/
+

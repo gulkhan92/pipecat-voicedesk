@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: pipecat-voicedesk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-voicedesk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-voicedesk}
+      POSTGRES_DB: ${POSTGRES_DB:-voicedesk}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pipecat_voicedesk_pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-voicedesk} -d ${POSTGRES_DB:-voicedesk}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pipecat_voicedesk_pgdata:
